@@ -3,6 +3,7 @@ import org.apache.spark.ml.clustering.KMeans
 import org.apache.spark.ml.evaluation.ClusteringEvaluator
 import org.apache.spark.sql.SparkSession
 import org.apache.log4j.{Level, Logger}
+import java.io.{BufferedWriter, FileWriter}
 
 object main {
 
@@ -17,14 +18,14 @@ object main {
     val spark = SparkSession
       .builder()
       .appName("Clustering for Brisbane_CityBike")
-      .master("local")
       .getOrCreate()
 
     //Set number of cluster(s) and seed(s)
     val numberOfClusters = args(0).toInt
     val numberOfSeeds = args(1).toLong
+    val pathWrite = args(3).toString
 
-    // Trains a k-means model.
+    // Preparing the input data
     val df = spark.read.json(args(2))
     val df2 = df.select("latitude", "longitude")
 
@@ -54,5 +55,16 @@ object main {
     // Show the result
     logger.info("Cluster Centres: ")
     model.clusterCenters.foreach(logger.info(_))
+
+    //Writing clusters to the txt file as a List String
+    val resfile = pathWrite
+    var resClusters = List[Serializable]()
+    val writer = new BufferedWriter(new FileWriter(resfile))
+    model.clusterCenters.foreach(x => {
+      resClusters = x :: resClusters
+    })
+    List(resClusters.toString()).foreach(writer.write)
+    writer.close()
+
   }
 }
